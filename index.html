@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <title>Aplikacja - Elastyczne Checklisty i Zarządzanie Pracą</title>
+  <style>
+    /* ============= RESET/PROSTE STYLOWANIE ============= */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+    }
+    h1, h2, h3 {
+      margin: 0 0 10px 0;
+    }
+    ul, li {
+      list-style: none;
+    }
+    button {
+      cursor: pointer;
+    }
+    header {
+      background: #075e54;
+      color: #fff;
+      padding: 15px;
+      text-align: center;
+    }
+    #app {
+      max-width: 1200px;
+      margin: 20px auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    #loginSection {
+      text-align: center;
+    }
+    #loginSection input {
+      display: block;
+      margin: 10px auto;
+      padding: 10px;
+      width: 50%;
+      max-width: 300px;
+    }
+    #loginError {
+      color: red;
+      margin-top: 10px;
+    }
+    #mainSection {
+      display: none;
+    }
+    .hidden {
+      display: none !important;
+    }
+    .topbar {
+      text-align: right;
+      margin-bottom: 10px;
+    }
+    .box-inline {
+      display: inline-block;
+      padding: 10px;
+      background: #fafafa;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      margin-right: 10px;
+    }
+    .error-msg {
+      color: red;
+      margin-top: 5px;
+    }
+    #tabs {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    #tabs button {
+      padding: 10px 20px;
+      margin: 0 5px;
+      border: none;
+      border-radius: 5px;
+      background: #ddd;
+    }
+    #tabs button.active {
+      background: #075e54;
+      color: #fff;
+    }
+    #content {
+      min-height: 300px;
+    }
+    .primary {
+      background: #4CAF50;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      padding: 10px 20px;
+      margin-top: 10px;
+    }
+    .secondary {
+      background: #ddd;
+      border: none;
+      border-radius: 5px;
+      padding: 8px 15px;
+      margin-top: 5px;
+    }
+    .btn-count {
+      background: #607D8B;
+      color: #fff;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 3px;
+      margin: 0 5px;
+    }
+    .list-item {
+      background: #fafafa;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    input[type="text"], input[type="password"], textarea, select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    img.preview {
+      width: 100px;
+      height: 100px;
+      object-fit: cover;
+      margin-right: 5px;
+      margin-top: 5px;
+      cursor: pointer;
+    }
+    label {
+      display: inline-block;
+      margin-top: 5px;
+    }
+    .checklist-item {
+      margin-left: 20px;
+    }
+    .checklist-item label {
+      cursor: pointer;
+    }
+    .flex-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      align-items: center;
+    }
+    .checkbox {
+      margin-right: 10px;
+      transform: scale(1.2);
+      margin-left: 0;
+    }
+    .row-block {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-wrap: wrap;
+      margin-top:5px;
+    }
+    .mini-label {
+      font-size: 0.9em;
+      margin-right: 5px;
+    }
+    textarea {
+      resize: vertical;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>LABO Aplikacja</h1>
+</header>
+
+<div id="app">
+  <!-- SEKCJA LOGOWANIA -->
+  <div id="loginSection">
+    <h2>Logowanie</h2>
+    <form id="loginForm">
+      <input type="text" id="loginInput" placeholder="Login" required />
+      <input type="password" id="passwordInput" placeholder="Hasło" required />
+      <div style="text-align:center; margin:10px 0;">
+        <input type="checkbox" id="rememberMe" />
+        <label for="rememberMe">Zapamiętaj mnie</label>
+      </div>
+      <button type="submit" class="primary">Zaloguj</button>
+    </form>
+    <p id="loginError"></p>
+  </div>
+
+  <!-- GŁÓWNA SEKCJA (PO ZALOGOWANIU) -->
+  <div id="mainSection">
+    <div class="topbar">
+      <span id="userWelcome"></span>
+      <button id="changePassBtn" class="secondary">Zmień hasło</button>
+      <button id="logoutBtn" class="secondary">Wyloguj</button>
+    </div>
+
+    <!-- Formularz zmiany hasła -->
+    <div id="changePassSection" class="box-inline hidden">
+      <h3>Zmiana hasła</h3>
+      <input type="password" id="oldPass" placeholder="Stare hasło" />
+      <input type="password" id="newPass" placeholder="Nowe hasło" />
+      <button id="confirmChangePassBtn" class="primary">Zatwierdź</button>
+      <button id="cancelChangePassBtn" class="secondary">Anuluj</button>
+      <p id="changePassError" class="error-msg"></p>
+    </div>
+
+    <!-- Pasek zakładek -->
+    <div id="tabs"></div>
+
+    <!-- Główna zawartość przełączana -->
+    <div id="content"></div>
+  </div>
+</div>
+
+<script>
+  /************************************************************
+   *                      DANE UŻYTKOWNIKÓW
+   ************************************************************/
+  const users = {
+    "logistyk": { haslo: "logistyk123" },
+    "kontroler1": { haslo: "kontroler123" },
+    "kontroler2": { haslo: "kontroler123" }
+  };
+
+  let currentUser = null;
+  let activeTab = "";
+  const rememberKey = "app-remember"; // klucz do zapisu w localStorage
+
+  /************************************************************
+   *        CHECKLISTY PRZECHOWYWANE DLA KAŻDEGO MIESZKANIA
+   ************************************************************/
+  const dwellingChecklistsKey = "dwellingChecklists";
+  function getDwellingChecklists() {
+    const str = localStorage.getItem(dwellingChecklistsKey);
+    if (!str) return {};
+    try { return JSON.parse(str); } catch(e) { return {}; }
+  }
+  function setDwellingChecklists(obj) {
+    localStorage.setItem(dwellingChecklistsKey, JSON.stringify(obj));
+  }
+
+  /************************************************************
+   *           LISTA 39 MIESZKAŃ (bazowe zlecenia)
+   ************************************************************/
+  let zlecenia = [
+    { id: 1, typ: "mieszkanie", nazwa: "Bagno 5 m210 (max2os)/2małe", kodDostepu: "", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 2, typ: "mieszkanie", nazwa: "Kasprzaka 31B/615 (max5os)/2duże 140cm 160cm 1małe", kodDostepu: "", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 3, typ: "mieszkanie", nazwa: "Tadeusza Boya Żeleńskiego 4 m 16 (max4os)/2 duża kołdra 4 poszewki na poduszkę", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 4, typ: "mieszkanie", nazwa: "Brylowska 6/78 (max3os)/3małe", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 5, typ: "mieszkanie", nazwa: "Działdowska 11/6 (max8os)/6małe 1 duże 160cm", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 6, typ: "mieszkanie", nazwa: "Dzielna 7b/68 (max7os)", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 7, typ: "mieszkanie", nazwa: "Fort Wola 12/41 (max6os)", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 8, typ: "mieszkanie", nazwa: "Wojciecha Górskiego 1 m 33 (max4os)", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 9, typ: "mieszkanie", nazwa: "Graniczna 4/804 /4małe (max4os)", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 10, typ: "mieszkanie", nazwa: "Chodakowska 24/6 (max6os)", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 11, typ: "mieszkanie", nazwa: "Karmelicka 21/2 (max4os)", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 12, typ: "mieszkanie", nazwa: "Kasprzaka 9/33 (max3os)/1duze 140cm/1małe", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 13, typ: "mieszkanie", nazwa: "Krucza 46 m 85 (max4os)/2 duża kołdra 4 poszewki na poduszkę", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 14, typ: "mieszkanie", nazwa: "Marszałkowska 83/7 (max7os)", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 15, typ: "mieszkanie", nazwa: "Kaliszówka 2/51 (max4os)", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 16, typ: "mieszkanie", nazwa: "Płocka 8/132 (max8os)", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 17, typ: "mieszkanie", nazwa: "Niepodległości 39/41/15 (max8os)", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 18, typ: "mieszkanie", nazwa: "Solidarności 129/131/200 (max4os)/4małe", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 19, typ: "mieszkanie", nazwa: "Młynarska 13 m 34 (max2os)/1duże LECH", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 20, typ: "mieszkanie", nazwa: "Karmelicka 2B/7 (max6os)", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 21, typ: "mieszkanie", nazwa: "Na Uboczu 20/19 (max8os)", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 22, typ: "mieszkanie", nazwa: "Niepodległości 47/9 (max4os)/4małe", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 23, typ: "mieszkanie", nazwa: "Nowolipie 9/11/41 (max7os)", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 24, typ: "mieszkanie", nazwa: "Ogrodowa 5/38 (max4os)/2małe 1duze 160cm", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 25, typ: "mieszkanie", nazwa: "Przechodnia A 2/1524 (max6os)", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 26, typ: "mieszkanie", nazwa: "Panska 57/38 (max8os)", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 27, typ: "mieszkanie", nazwa: "Graniczna 2/39 (max7os)", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 28, typ: "mieszkanie", nazwa: "Plac Zamkowy 15/19/2 (max6os)", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 29, typ: "mieszkanie", nazwa: "Platynowa 8/91 (max7os)", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 30, typ: "mieszkanie", nazwa: "Panska 57/37 (max7os)", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 31, typ: "mieszkanie", nazwa: "Przasnyska 16C/18 (max4os)/2małe 1duze 160cm", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 32, typ: "mieszkanie", nazwa: "Franciszka Salezego 6 m 94 (max4os)/2 duża kołdra 4 poszewki na poduszke", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 33, typ: "mieszkanie", nazwa: "Mińska 25a/13 (max9os)", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 34, typ: "mieszkanie", nazwa: "Górnośląska 9/11/41 (max6os)", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 35, typ: "mieszkanie", nazwa: "Solidarności 129/131/201 (max4os)/2małe 140cm", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 36, typ: "mieszkanie", nazwa: "Sewastopolska 4/13 (max5os)", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 37, typ: "mieszkanie", nazwa: "Zegadłowicza 1/46 (max10os)", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 38, typ: "mieszkanie", nazwa: "Przechodnia B 2/825 (max4os)/4małe", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] },
+    { id: 39, typ: "mieszkanie", nazwa: "Broniewskiego 21/143 (max4os)/4małe", kodDostepu:"", uwagi:"", liczbaOsob:0, smallSheets:0, sheet140:0, sheet160:0, checklistType:"", checkItems:[] }
+  ];
+
+  // Dodatkowe zadania (dodawane przez logistyka)
+  let listyKontrolerow = { kontroler1: [], kontroler2: [] };
+  let wykonaneZadania = [];
+  let usterki = [];
+  let activeTabs = [];
+
+  /************************************************************
+   *           LOGOWANIE / WYLOGOWANIE
+   ************************************************************/
+  const loginSection    = document.getElementById("loginSection");
+  const loginForm       = document.getElementById("loginForm");
+  const loginError      = document.getElementById("loginError");
+  const rememberMeCheck = document.getElementById("rememberMe");
+  const mainSection     = document.getElementById("mainSection");
+  const userWelcome     = document.getElementById("userWelcome");
+  const changePassBtn   = document.getElementById("changePassBtn");
+  const logoutBtn       = document.getElementById("logoutBtn");
+  const changePassSection    = document.getElementById("changePassSection");
+  const oldPassInput         = document.getElementById("oldPass");
+  const newPassInput         = document.getElementById("newPass");
+  const confirmChangePassBtn = document.getElementById("confirmChangePassBtn");
+  const cancelChangePassBtn  = document.getElementById("cancelChangePassBtn");
+  const changePassError      = document.getElementById("changePassError");
+  const tabsContainer        = document.getElementById("tabs");
+  const contentContainer     = document.getElementById("content");
+
+  window.addEventListener("load", () => {
+    const saved = localStorage.getItem(rememberKey);
+    if (saved) {
+      try {
+        const { login, pass } = JSON.parse(saved);
+        document.getElementById("loginInput").value = login;
+        document.getElementById("passwordInput").value = pass;
+        rememberMeCheck.checked = true;
+      } catch(e) {}
+    }
+  });
+
+  loginForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const loginVal = document.getElementById("loginInput").value.trim();
+    const passVal  = document.getElementById("passwordInput").value.trim();
+    if (users[loginVal] && users[loginVal].haslo === passVal) {
+      currentUser = loginVal;
+      loginSection.style.display = "none";
+      mainSection.style.display  = "block";
+      userWelcome.textContent    = `Witaj, ${currentUser}!`;
+      if (rememberMeCheck.checked) {
+        localStorage.setItem(rememberKey, JSON.stringify({ login: loginVal, pass: passVal }));
+      } else {
+        localStorage.removeItem(rememberKey);
+      }
+      initTabs();
+    } else {
+      loginError.textContent = "Nieprawidłowy login lub hasło.";
+    }
+  });
+
+  logoutBtn.addEventListener("click", () => {
+    currentUser = null;
+    mainSection.style.display = "none";
+    loginSection.style.display = "block";
+    loginError.textContent    = "";
+    oldPassInput.value        = "";
+    newPassInput.value        = "";
+    changePassSection.classList.add("hidden");
+  });
+
+  /************************************************************
+   *           ZMIANA HASŁA
+   ************************************************************/
+  changePassBtn.addEventListener("click", () => {
+    changePassSection.classList.remove("hidden");
+    changePassError.textContent = "";
+    oldPassInput.value = "";
+    newPassInput.value = "";
+  });
+  cancelChangePassBtn.addEventListener("click", () => {
+    changePassSection.classList.add("hidden");
+    changePassError.textContent = "";
+  });
+  confirmChangePassBtn.addEventListener("click", () => {
+    const oldP = oldPassInput.value.trim();
+    const newP = newPassInput.value.trim();
+    if (!oldP || !newP) {
+      changePassError.textContent = "Wypełnij oba pola!";
+      return;
+    }
+    if (users[currentUser].haslo !== oldP) {
+      changePassError.textContent = "Nieprawidłowe stare hasło!";
+      return;
+    }
+    users[currentUser].haslo = newP;
+    alert("Hasło zostało zmienione!");
+    changePassSection.classList.add("hidden");
+  });
+
+  /************************************************************
+   *           ZAKŁADKI
+   ************************************************************/
+  function initTabs() {
+    if (currentUser === "logistyk") {
+      activeTabs = [
+        "KALENDARZ",
+        "CHECKLISTY",
+        "ZLECENIA",
+        "WYKONANE",
+        "USTERKI",
+        "NOTATKI",
+        "GRAFIK PRACY",
+        "ROZLICZENIE",
+        "LISTY SPRZĄTAJĄCE",
+        "CHAT"
+      ];
+    } else {
+      activeTabs = [
+        "LISTA NA DZIS",
+        "WYKONANE",
+        "USTERKI",
+        "NOTATKI",
+        "GRAFIK PRACY",
+        "ROZLICZENIE",
+        "CHAT"
+      ];
+    }
+    if (activeTabs.length > 0) activeTab = activeTabs[0];
+    renderTabs();
+    renderContent();
+  }
+
+  function renderTabs() {
+    tabsContainer.innerHTML = "";
+    activeTabs.forEach((tabName) => {
+      const btn = document.createElement("button");
+      btn.textContent = tabName;
+      btn.className = (tabName === activeTab) ? "active" : "";
+      btn.addEventListener("click", () => {
+        activeTab = tabName;
+        renderTabs();
+        renderContent();
+      });
+      tabsContainer.appendChild(btn);
+    });
+  }
+
+  /************************************************************
+   *           MODYFIKACJA FUNKCJI RENDEROWANIA ZAWARTOŚCI
+   ************************************************************/
+  function renderContent() {
+    contentContainer.innerHTML = "";
+    switch (activeTab) {
+      case "KALENDARZ":
+        contentContainer.innerHTML = "<h2>Kalendarz</h2><p>Tu możesz dodać kalendarz.</p>";
+        break;
+      case "CHECKLISTY":
+        renderChecklistsEditor();
+        break;
+      case "ZLECENIA":
+        renderZlecenia();
+        break;
+      case "LISTA NA DZIS":
+        renderListaNaDzis();
+        break;
+      case "WYKONANE":
+        renderWykonane();
+        break;
+      case "USTERKI":
+        renderUsterki();
+        break;
+      case "NOTATKI":
+        contentContainer.innerHTML = `
+          <h2>Notatki</h2>
+          <textarea id="notatkiArea" rows="6" placeholder="Wpisz notatki..."></textarea>
+          <button class="primary" onclick="zapiszNotatki()">Zapisz notatki</button>
+        `;
+        break;
+      case "GRAFIK PRACY":
+        if (currentUser === "logistyk") {
+          let grafik = getGrafikPracy();
+          contentContainer.innerHTML = "<h2>Grafik pracy - dostępność kontrolerów</h2>";
+          let listHtml = "";
+          ["kontroler1", "kontroler2"].forEach(ctrl => {
+            let available = grafik[ctrl] || [];
+            available.sort();
+            listHtml += `<h3>${ctrl}</h3>`;
+            if (available.length === 0) {
+              listHtml += `<p>Brak dostępności</p>`;
+            } else {
+              listHtml += "<ul>";
+              available.forEach(date => { listHtml += `<li>${date}</li>`; });
+              listHtml += "</ul>";
+            }
+          });
+          contentContainer.innerHTML += listHtml;
+        } else {
+          let grafik = getGrafikPracy();
+          let mySchedule = grafik[currentUser] || [];
+          contentContainer.innerHTML = `
+            <h2>Twój grafik pracy</h2>
+            <div class="list-item">
+              <label>Wybierz datę:</label>
+              <input type="date" id="availabilityDate">
+              <button class="primary" onclick="addAvailability()">Dodaj dostępność</button>
+            </div>
+            <h3>Twoja dostępność:</h3>
+            <ul id="availabilityList">
+              ${mySchedule.length > 0 
+                ? mySchedule.sort().map(date => `<li>${date} <button class="secondary" onclick="removeAvailability('${date}')">Usuń</button></li>`).join("")
+                : "<li>Brak dostępności</li>"
+              }
+            </ul>
+          `;
+        }
+        break;
+      case "ROZLICZENIE":
+        if (currentUser === "logistyk") {
+          renderRozliczenieLogistyk();
+        } else {
+          renderRozliczenieController();
+        }
+        break;
+      case "LISTY SPRZĄTAJĄCE":
+        renderListySprzatajace();
+        break;
+      case "CHAT":
+        contentContainer.innerHTML = "<h2>Chat</h2><p>Tu będzie chat.</p>";
+        break;
+      default:
+        contentContainer.innerHTML = "<p>Brak zawartości.</p>";
+    }
+  }
+
+  /************************************************************
+   *        1. ZAKŁADKA „CHECKLISTY” (LOGISTYK)
+   ************************************************************/
+  function renderChecklistsEditor() {
+    const div = document.createElement("div");
+    div.innerHTML = "<h2>Edytuj Checklisty dla Mieszkań</h2>";
+    const dwellSelect = document.createElement("select");
+    dwellSelect.style.width = "100%";
+    dwellSelect.style.marginBottom = "10px";
+    zlecenia.filter(z => z.typ === "mieszkanie").forEach(m => {
+      const opt = document.createElement("option");
+      opt.value = m.id;
+      opt.textContent = `(${m.id}) ${m.nazwa}`;
+      dwellSelect.appendChild(opt);
+    });
+    const typeSelect = document.createElement("select");
+    typeSelect.style.width = "100%";
+    typeSelect.style.marginBottom = "10px";
+    const optPod = document.createElement("option");
+    optPod.value = "podstawowa";
+    optPod.textContent = "Podstawowa";
+    const optRoz = document.createElement("option");
+    optRoz.value = "rozszerzona";
+    optRoz.textContent = "Rozszerzona";
+    typeSelect.appendChild(optPod);
+    typeSelect.appendChild(optRoz);
+    const tasksDiv = document.createElement("div");
+    tasksDiv.style.marginTop = "10px";
+    function refreshTasks() {
+      tasksDiv.innerHTML = "";
+      const mId = dwellSelect.value;
+      const cType = typeSelect.value;
+      if (!mId || !cType) return;
+      let data = getDwellingChecklists();
+      if (!data[mId]) { data[mId] = { podstawowa: [], rozszerzona: [] }; }
+      const arr = data[mId][cType];
+      const ul = document.createElement("ul");
+      arr.forEach((txt, idx) => {
+        const li = document.createElement("li");
+        li.className = "list-item";
+        li.innerHTML = `<strong>Zadanie ${idx + 1}:</strong> ${txt}
+          <button class="secondary" style="float:right;" onclick="removeChecklistTask('${mId}', '${cType}', ${idx})">Usuń</button>`;
+        ul.appendChild(li);
+      });
+      tasksDiv.appendChild(ul);
+      const addDiv = document.createElement("div");
+      addDiv.className = "list-item";
+      addDiv.innerHTML = `<h3>Dodaj nowe zadanie (pojedyncze)</h3>
+        <input type="text" id="newTaskInput" placeholder="np. Sprawdź okna">
+        <button class="primary" onclick="addChecklistTask('${mId}', '${cType}')">Dodaj</button>`;
+      tasksDiv.appendChild(addDiv);
+      const multiDiv = document.createElement("div");
+      multiDiv.className = "list-item";
+      multiDiv.innerHTML = `<h3>Dodaj wiele zadań naraz</h3>
+        <textarea id="multiTaskInput" rows="4" placeholder="Jedno zadanie w każdej linii"></textarea>
+        <button class="primary" onclick="addMultipleChecklistTasks('${mId}', '${cType}')">Dodaj wiele</button>`;
+      tasksDiv.appendChild(multiDiv);
+    }
+    dwellSelect.addEventListener("change", refreshTasks);
+    typeSelect.addEventListener("change", refreshTasks);
+    div.appendChild(document.createTextNode("Wybierz mieszkanie:"));
+    div.appendChild(dwellSelect);
+    div.appendChild(document.createTextNode("Wybierz typ checklisty:"));
+    div.appendChild(typeSelect);
+    div.appendChild(tasksDiv);
+    contentContainer.appendChild(div);
+    refreshTasks();
+  }
+
+  window.addChecklistTask = function(mId, cType) {
+    const input = document.getElementById("newTaskInput");
+    if (!input || !input.value.trim()) { alert("Wpisz treść zadania!"); return; }
+    let txt = input.value.trim();
+    let data = getDwellingChecklists();
+    if (!data[mId]) { data[mId] = { podstawowa: [], rozszerzona: [] }; }
+    data[mId][cType].push(txt);
+    setDwellingChecklists(data);
+    input.value = "";
+    renderContent();
+  };
+
+  window.addMultipleChecklistTasks = function(mId, cType) {
+    const multi = document.getElementById("multiTaskInput");
+    if (!multi) return;
+    const raw = multi.value.trim();
+    if (!raw) { alert("Wpisz treść zadań (każde w osobnej linii)!"); return; }
+    let data = getDwellingChecklists();
+    if (!data[mId]) { data[mId] = { podstawowa: [], rozszerzona: [] }; }
+    const lines = raw.split("\n").map(l => l.trim()).filter(l => l);
+    data[mId][cType] = data[mId][cType].concat(lines);
+    setDwellingChecklists(data);
+    multi.value = "";
+    renderContent();
+  };
+
+  window.removeChecklistTask = function(mId, cType, idx) {
+    let data = getDwellingChecklists();
+    if (!data[mId]) return;
+    data[mId][cType].splice(idx, 1);
+    setDwellingChecklists(data);
+    renderContent();
+  };
+
+  /************************************************************
+   *        2. ZAKŁADKA „ZLECENIA” (LOGISTYK)
+   ************************************************************/
+  function renderZlecenia() {
+    const div = document.createElement("div");
+    div.innerHTML = `<h2>Zlecenia (mieszkania + własne zadania)</h2>`;
+    const formDiv = document.createElement("div");
+    formDiv.className = "list-item";
+    formDiv.innerHTML = `<h3>Dodaj własne zadanie (dodatkowe)</h3>
+      <label>Nazwa zadania:</label>
+      <input type="text" id="noweZadanieNazwa" placeholder="np. Zakup środków czystości">
+      <button class="primary" onclick="dodajZadanieDodatkowe()">Dodaj zadanie</button>`;
+    div.appendChild(formDiv);
+    const ul = document.createElement("ul");
+    ul.style.marginTop = "10px";
+    zlecenia.forEach((z) => {
+      const li = document.createElement("li");
+      li.className = "list-item";
+      li.innerHTML = `<div class="flex-row">
+          <input type="checkbox" class="checkbox" id="check-${z.id}">
+          <strong>${z.typ === "mieszkanie" ? "Mieszkanie:" : "Zadanie:"} ${z.nazwa}</strong>
+        </div>
+        <label>Kod dostępu:</label>
+        <input type="text" value="${z.kodDostepu}" oninput="updateKod(${z.id}, this.value)">
+        <label>Uwagi:</label>
+        <input type="text" value="${z.uwagi}" oninput="updateUwagi(${z.id}, this.value)">
+        <div class="row-block">
+          <span class="mini-label">Goście:</span>
+          <button class="btn-count" onclick="decrementOsob(${z.id})">-</button>
+          <span id="osoby-${z.id}">${z.liczbaOsob}</span>
+          <button class="btn-count" onclick="incrementOsob(${z.id})">+</button>
+        </div>
+        <div class="row-block">
+          <span class="mini-label">Małe:</span>
+          <button class="btn-count" onclick="decrementSmall(${z.id})">-</button>
+          <span id="small-${z.id}">${z.smallSheets}</span>
+          <button class="btn-count" onclick="incrementSmall(${z.id})">+</button>
+          <span class="mini-label">140:</span>
+          <button class="btn-count" onclick="decrement140(${z.id})">-</button>
+          <span id="s140-${z.id}">${z.sheet140}</span>
+          <button class="btn-count" onclick="increment140(${z.id})">+</button>
+          <span class="mini-label">160:</span>
+          <button class="btn-count" onclick="decrement160(${z.id})">-</button>
+          <span id="s160-${z.id}">${z.sheet160}</span>
+          <button class="btn-count" onclick="increment160(${z.id})">+</button>
+        </div>
+        <label>Typ checklisty:</label>
+        <select onchange="updateChecklistType(${z.id}, this.value)">
+          <option value="">-- Wybierz --</option>
+          <option value="podstawowa" ${z.checklistType==="podstawowa"?"selected":""}>Podstawowa</option>
+          <option value="rozszerzona" ${z.checklistType==="rozszerzona"?"selected":""}>Rozszerzona</option>
+        </select>`;
+      ul.appendChild(li);
+    });
+    div.appendChild(ul);
+    const assignDiv = document.createElement("div");
+    assignDiv.style.marginTop = "20px";
+    assignDiv.innerHTML = `<label style="margin-right:10px;">Wyślij do kontrolera:</label>
+      <select id="kontrolerSelectGroup">
+        <option value="kontroler1">Kontroler 1</option>
+        <option value="kontroler2">Kontroler 2</option>
+      </select>
+      <button class="primary" onclick="wyslijWybraneZlecenia()">Wyślij zaznaczone</button>`;
+    div.appendChild(assignDiv);
+    const assignedDiv = document.createElement("div");
+    assignedDiv.innerHTML = "<h3>Przypisane do kontrolerów</h3>";
+    assignedDiv.style.marginTop = "20px";
+    const assignedWrap = document.createElement("div");
+    assignedWrap.style.display = "flex";
+    assignedWrap.style.gap = "20px";
+    const k1 = document.createElement("div");
+    k1.innerHTML = "<h4>Kontroler 1</h4>";
+    const ul1 = document.createElement("ul");
+    listyKontrolerow["kontroler1"].forEach((x) => {
+      const li = document.createElement("li");
+      li.className = "list-item";
+      li.textContent = `${x.typ === "mieszkanie" ? "Mieszkanie:" : "Zadanie:"} ${x.nazwa}`;
+      ul1.appendChild(li);
+    });
+    k1.appendChild(ul1);
+    const k2 = document.createElement("div");
+    k2.innerHTML = "<h4>Kontroler 2</h4>";
+    const ul2 = document.createElement("ul");
+    listyKontrolerow["kontroler2"].forEach((x) => {
+      const li = document.createElement("li");
+      li.className = "list-item";
+      li.textContent = `${x.typ === "mieszkanie" ? "Mieszkanie:" : "Zadanie:"} ${x.nazwa}`;
+      ul2.appendChild(li);
+    });
+    k2.appendChild(ul2);
+    assignedWrap.appendChild(k1);
+    assignedWrap.appendChild(k2);
+    assignedDiv.appendChild(assignedWrap);
+    div.appendChild(assignedDiv);
+    contentContainer.appendChild(div);
+  }
+
+  window.dodajZadanieDodatkowe = function() {
+    const inp = document.getElementById("noweZadanieNazwa");
+    const val = inp.value.trim();
+    if (!val) { alert("Podaj nazwę zadania!"); return; }
+    const nowe = { id: Date.now(), typ: "dodatkowe", nazwa: val, kodDostepu: "", uwagi: "", liczbaOsob: 0, smallSheets: 0, sheet140: 0, sheet160: 0, checklistType: "", checkItems: [] };
+    zlecenia.push(nowe);
+    inp.value = "";
+    renderContent();
+  };
+
+  window.updateKod = function(id, val) { zlecenia = zlecenia.map(z => z.id === id ? { ...z, kodDostepu: val } : z); };
+  window.updateUwagi = function(id, val) { zlecenia = zlecenia.map(z => z.id === id ? { ...z, uwagi: val } : z); };
+
+  function updateUI(id) {
+    const z = zlecenia.find(x => x.id === id);
+    if (z) {
+      document.getElementById(`osoby-${id}`).textContent = z.liczbaOsob;
+      document.getElementById(`small-${id}`).textContent = z.smallSheets;
+      document.getElementById(`s140-${id}`).textContent  = z.sheet140;
+      document.getElementById(`s160-${id}`).textContent  = z.sheet160;
+    }
+  }
+  window.incrementOsob = function(id) { zlecenia = zlecenia.map(z => { if (z.id === id) z.liczbaOsob++; return z; }); updateUI(id); };
+  window.decrementOsob = function(id) { zlecenia = zlecenia.map(z => { if (z.id === id && z.liczbaOsob > 0) z.liczbaOsob--; return z; }); updateUI(id); };
+  window.incrementSmall = function(id) { zlecenia = zlecenia.map(z => { if (z.id === id) z.smallSheets++; return z; }); updateUI(id); };
+  window.decrementSmall = function(id) { zlecenia = zlecenia.map(z => { if (z.id === id && z.smallSheets > 0) z.smallSheets--; return z; }); updateUI(id); };
+  window.increment140 = function(id) { zlecenia = zlecenia.map(z => { if (z.id === id) z.sheet140++; return z; }); updateUI(id); };
+  window.decrement140 = function(id) { zlecenia = zlecenia.map(z => { if (z.id === id && z.sheet140 > 0) z.sheet140--; return z; }); updateUI(id); };
+  window.increment160 = function(id) { zlecenia = zlecenia.map(z => { if (z.id === id) z.sheet160++; return z; }); updateUI(id); };
+  window.decrement160 = function(id) { zlecenia = zlecenia.map(z => { if (z.id === id && z.sheet160 > 0) z.sheet160--; return z; }); updateUI(id); };
+
+  window.updateChecklistType = function(id, val) { zlecenia = zlecenia.map(z => z.id === id ? { ...z, checklistType: val } : z); };
+
+  window.wyslijWybraneZlecenia = function() {
+    const kontroler = document.getElementById("kontrolerSelectGroup").value;
+    const checkboxes = [...document.querySelectorAll('input[type="checkbox"].checkbox')];
+    const selectedIds = checkboxes.filter(ch => ch.checked).map(ch => parseInt(ch.id.split("-")[1]));
+    if (selectedIds.length === 0) { alert("Nie wybrano żadnych zleceń!"); return; }
+    const allCheckData = getDwellingChecklists();
+    selectedIds.forEach(id => {
+      const found = zlecenia.find(z => z.id === id);
+      if (found) {
+        if (found.typ === "mieszkanie") {
+          const mIdStr = String(found.id);
+          const cType  = found.checklistType;
+          if (cType && allCheckData[mIdStr] && allCheckData[mIdStr][cType]) {
+            const tasks = allCheckData[mIdStr][cType].map(t => ({ text: t, done: false }));
+            found.checkItems = tasks;
+          } else { found.checkItems = []; }
+        }
+        listyKontrolerow[kontroler].push(found);
+        zlecenia = zlecenia.filter(z => z.id !== id);
+      }
+    });
+    alert("Wybrane zlecenia zostały wysłane do " + kontroler + "!");
+    renderContent();
+  };
+
+  /************************************************************
+   *           3. LISTA NA DZIS (KONTROLER)
+   ************************************************************/
+  function renderListaNaDzis() {
+    const div = document.createElement("div");
+    div.innerHTML = "<h2>Lista na dziś</h2>";
+    const ul = document.createElement("ul");
+    listyKontrolerow[currentUser].forEach((z) => {
+      const li = document.createElement("li");
+      li.className = "list-item";
+      let checklistHTML = "";
+      if (z.checkItems && z.checkItems.length > 0) {
+        checklistHTML = "<h4>Checklista:</h4>";
+        z.checkItems.forEach((item, idx) => {
+          checklistHTML += `
+            <div class="checklist-item">
+              <label>
+                <input type="checkbox" ${item.done ? "checked" : ""} onclick="toggleCheckItem('${currentUser}', ${z.id}, ${idx})">
+                ${item.text}
+              </label>
+            </div>
+          `;
+        });
+      }
+      li.innerHTML = `
+        <strong>${z.typ === "mieszkanie" ? "Mieszkanie:" : "Zadanie:"} ${z.nazwa}</strong>
+        <br>Kod dostępu: ${z.kodDostepu || "--"}
+        <br>Uwagi: ${z.uwagi || "--"}
+        <br>Liczba gości: ${z.liczbaOsob}
+        <br>Małe: ${z.smallSheets}, 140: ${z.sheet140}, 160: ${z.sheet160}
+        <br><em>Typ checklisty: ${z.checklistType || "brak"}</em>
+        <br>${checklistHTML}
+        <button class="secondary" style="margin-top:10px;" onclick="oznaczJakoWykonane('${currentUser}', ${z.id})">Oznacz jako wykonane</button>
+      `;
+      ul.appendChild(li);
+    });
+    div.appendChild(ul);
+    div.innerHTML += `<button class="primary" onclick="downloadControllerOrders()">Pobierz listę zleceń (CSV)</button>`;
+    contentContainer.appendChild(div);
+  }
+  window.toggleCheckItem = function(kontroler, zId, idx) {
+    listyKontrolerow[kontroler] = listyKontrolerow[kontroler].map(z => {
+      if (z.id === zId) { z.checkItems[idx].done = !z.checkItems[idx].done; }
+      return z;
+    });
+  };
+  window.oznaczJakoWykonane = function(kontroler, zId) {
+    const zad = listyKontrolerow[kontroler].find(z => z.id === zId);
+    if (zad) {
+      const dzis = new Date().toISOString().split("T")[0];
+      wykonaneZadania.push({ ...zad, kontroler, dataWykonania: dzis });
+      listyKontrolerow[kontroler] = listyKontrolerow[kontroler].filter(x => x.id !== zId);
+      renderContent();
+    }
+  };
+
+  /************************************************************
+   *           4. WYKONANE
+   ************************************************************/
+  function renderWykonane() {
+    const div = document.createElement("div");
+    div.innerHTML = "<h2>Wykonane zadania</h2>";
+    const dateInput = document.createElement("input");
+    dateInput.type = "date";
+    dateInput.style.maxWidth = "200px";
+    dateInput.style.marginBottom = "10px";
+    dateInput.onchange = loadList;
+    div.appendChild(dateInput);
+    const ul = document.createElement("ul");
+    div.appendChild(ul);
+    function loadList() {
+      ul.innerHTML = "";
+      const dVal = dateInput.value;
+      let filtered = [];
+      if (currentUser === "logistyk") {
+        filtered = wykonaneZadania.filter(z => !dVal || z.dataWykonania === dVal);
+      } else {
+        filtered = wykonaneZadania.filter(z => z.kontroler === currentUser && (!dVal || z.dataWykonania === dVal));
+      }
+      filtered.forEach(z => {
+        const li = document.createElement("li");
+        li.className = "list-item";
+        let checkText = "";
+        if (z.checkItems && z.checkItems.length > 0) {
+          checkText = "<h4>Wykonana checklist:</h4>";
+          z.checkItems.forEach(i => {
+            checkText += `<div style="margin-left:20px;">- [${i.done ? "X" : " "}] ${i.text}</div>`;
+          });
+        }
+        li.innerHTML = `
+          <strong>${z.typ === "mieszkanie" ? "Mieszkanie:" : "Zadanie:"} ${z.nazwa}</strong>
+          <br>Kontroler: ${z.kontroler}
+          <br>Data wykonania: ${z.dataWykonania}
+          <br>Kod dostępu: ${z.kodDostepu || "--"}
+          <br>Uwagi: ${z.uwagi || "--"}
+          <br>Goście: ${z.liczbaOsob}, Małe: ${z.smallSheets}, 140: ${z.sheet140}, 160: ${z.sheet160}
+          <br>Typ checklisty: ${z.checklistType || "--"}
+          ${checkText}
+        `;
+        ul.appendChild(li);
+      });
+    }
+    loadList();
+    contentContainer.appendChild(div);
+  }
+
+  /************************************************************
+   *           5. USTERKI (z możliwością powiększania zdjęć)
+   ************************************************************/
+  function renderUsterki() {
+    const div = document.createElement("div");
+    div.innerHTML = "<h2>Usterki</h2>";
+    const formDiv = document.createElement("div");
+    formDiv.className = "list-item";
+    formDiv.innerHTML = `
+      <h3>Dodaj nową usterkę</h3>
+      <label>Tytuł usterki:</label>
+      <input type="text" id="usterkaTytul" placeholder="np. Awaria pralki">
+      <label>Data:</label>
+      <input type="date" id="usterkaData">
+      <label>Wybierz mieszkanie:</label>
+      <select id="usterkaMieszkanie">
+        ${zlecenia.filter(z => z.typ === "mieszkanie").map(m => `<option value="${m.id}">${m.nazwa}</option>`).join("")}
+      </select>
+      <label>Opis usterki:</label>
+      <textarea id="usterkaOpis" placeholder="Podaj szczegóły..."></textarea>
+      <label>Zdjęcia (opcjonalnie):</label>
+      <input type="file" id="usterkaZdjecia" accept="image/*" multiple>
+      <button class="primary" onclick="dodajUsterke()">Dodaj usterkę</button>
+    `;
+    div.appendChild(formDiv);
+    const aktDiv = document.createElement("div");
+    aktDiv.innerHTML = "<h3>Aktualne Usterki</h3>";
+    const ulAkt = document.createElement("ul");
+    const zamDiv = document.createElement("div");
+    zamDiv.innerHTML = "<h3>Zamknięte Usterki</h3>";
+    const ulZam = document.createElement("ul");
+    usterki.forEach(u => {
+      const li = document.createElement("li");
+      li.className = "list-item";
+      const mieszk = zlecenia.find(x => x.id === u.mieszkanieId)
+        || listyKontrolerow.kontroler1.find(x => x.id === u.mieszkanieId)
+        || listyKontrolerow.kontroler2.find(x => x.id === u.mieszkanieId);
+      li.innerHTML = `
+        <strong>${u.tytul}</strong><br>
+        Mieszkanie: ${mieszk ? mieszk.nazwa : "nieznane"}<br>
+        Data: ${u.data}<br>
+        Opis: ${u.opis}<br>
+        Status: ${u.status}<br>
+      `;
+      if (u.zdjecia && u.zdjecia.length > 0) {
+        const imgDiv = document.createElement("div");
+        u.zdjecia.forEach(src => {
+          const img = document.createElement("img");
+          img.src = src;
+          img.className = "preview";
+          img.onclick = function() { zoomImage(this); };
+          imgDiv.appendChild(img);
+        });
+        li.appendChild(imgDiv);
+      }
+      if (u.status !== "Zamknięta") {
+        const btnClose = document.createElement("button");
+        btnClose.className = "secondary";
+        btnClose.textContent = "Zamknij usterkę";
+        btnClose.onclick = () => { u.status = "Zamknięta"; renderContent(); };
+        li.appendChild(btnClose);
+        ulAkt.appendChild(li);
+      } else {
+        ulZam.appendChild(li);
+      }
+    });
+    aktDiv.appendChild(ulAkt);
+    zamDiv.appendChild(ulZam);
+    div.appendChild(aktDiv);
+    div.appendChild(zamDiv);
+    contentContainer.appendChild(div);
+  }
+
+  window.dodajUsterke = function() {
+    const tytul = document.getElementById("usterkaTytul").value.trim();
+    const dataU = document.getElementById("usterkaData").value;
+    const mieszId = parseInt(document.getElementById("usterkaMieszkanie").value);
+    const opis = document.getElementById("usterkaOpis").value.trim();
+    const files = document.getElementById("usterkaZdjecia").files;
+    if (!tytul) { alert("Podaj tytuł usterki!"); return; }
+    if (!dataU) { alert("Podaj datę!"); return; }
+    if (!mieszId) { alert("Wybierz mieszkanie!"); return; }
+    const newU = { id: Date.now(), tytul, data: dataU, opis, mieszkanieId: mieszId, status: "Nowa", zdjecia: [] };
+    if (files.length > 0) {
+      let countRead = 0;
+      for (let i = 0; i < files.length; i++) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          newU.zdjecia.push(e.target.result);
+          countRead++;
+          if (countRead === files.length) { usterki.push(newU); renderContent(); }
+        };
+        reader.readAsDataURL(files[i]);
+      }
+    } else { usterki.push(newU); renderContent(); }
+  };
+
+  /************************************************************
+   *           NOTATKI
+   ************************************************************/
+  window.zapiszNotatki = function() {
+    const val = document.getElementById("notatkiArea").value;
+    alert("Notatki zostały zapisane (przykładowy alert)!\n\n" + val);
+  };
+
+  /************************************************************
+   *  GRAFIK PRACY - DOSTĘPNOŚĆ KONTROLERÓW
+   ************************************************************/
+  const grafikPracyKey = "grafikPracy";
+  function getGrafikPracy() {
+    const str = localStorage.getItem(grafikPracyKey);
+    if (!str) return {};
+    try { return JSON.parse(str); } catch (e) { return {}; }
+  }
+  function setGrafikPracy(obj) {
+    localStorage.setItem(grafikPracyKey, JSON.stringify(obj));
+  }
+  window.addAvailability = function() {
+    const dateInput = document.getElementById("availabilityDate");
+    const dateVal = dateInput.value;
+    if (!dateVal) { alert("Wybierz datę!"); return; }
+    let grafik = getGrafikPracy();
+    if (!grafik[currentUser]) { grafik[currentUser] = []; }
+    if (!grafik[currentUser].includes(dateVal)) {
+      grafik[currentUser].push(dateVal);
+      setGrafikPracy(grafik);
+      renderContent();
+    } else { alert("Ta data jest już dodana."); }
+  };
+  window.removeAvailability = function(date) {
+    let grafik = getGrafikPracy();
+    if (grafik[currentUser]) {
+      grafik[currentUser] = grafik[currentUser].filter(d => d !== date);
+      setGrafikPracy(grafik);
+      renderContent();
+    }
+  };
+
+  /************************************************************
+   *  ROZLICZENIE PRACY KONTROLERÓW
+   *  Kontroler klika "Rozpocznij pracę" / "Zakończ pracę".
+   ************************************************************/
+  const workingSessionsKey = "workingSessions";
+  function getWorkingSessions() {
+    const str = localStorage.getItem(workingSessionsKey);
+    if (!str) return {};
+    try { return JSON.parse(str); } catch(e) { return {}; }
+  }
+  function setWorkingSessions(obj) {
+    localStorage.setItem(workingSessionsKey, JSON.stringify(obj));
+  }
+  window.startWork = function() {
+    let sessions = getWorkingSessions();
+    if (!sessions[currentUser]) { sessions[currentUser] = []; }
+    if (sessions[currentUser].length > 0 && !sessions[currentUser][sessions[currentUser].length - 1].end) {
+      alert("Praca już rozpoczęta!"); return;
+    }
+    sessions[currentUser].push({ start: new Date().toISOString() });
+    setWorkingSessions(sessions);
+    renderContent();
+  };
+  window.stopWork = function() {
+    let sessions = getWorkingSessions();
+    if (!sessions[currentUser] || sessions[currentUser].length === 0 || sessions[currentUser][sessions[currentUser].length - 1].end) {
+      alert("Nie rozpocząłeś pracy!"); return;
+    }
+    const lastSession = sessions[currentUser][sessions[currentUser].length - 1];
+    lastSession.end = new Date().toISOString();
+    const startTime = new Date(lastSession.start);
+    const endTime = new Date(lastSession.end);
+    const duration = (endTime - startTime) / (1000 * 60 * 60);
+    lastSession.duration = Math.round(duration * 100) / 100;
+    setWorkingSessions(sessions);
+    renderContent();
+  };
+
+  window.editSession = function(ctrl, index) {
+    let sessions = getWorkingSessions();
+    if (!sessions[ctrl] || sessions[ctrl].length <= index || !sessions[ctrl][index].end) {
+      alert("Sesja nie może być edytowana (nie zakończona lub nie istnieje)!"); return;
+    }
+    const newDuration = prompt("Podaj nowy czas trwania sesji (w godzinach):", sessions[ctrl][index].duration || 0);
+    if (newDuration !== null) {
+      const parsed = parseFloat(newDuration);
+      if (!isNaN(parsed) && parsed >= 0) {
+        sessions[ctrl][index].duration = Math.round(parsed * 100) / 100;
+        setWorkingSessions(sessions);
+        renderContent();
+      } else { alert("Nieprawidłowa wartość!"); }
+    }
+  };
+
+  function renderRozliczenieController() {
+    const sessions = getWorkingSessions();
+    const userSessions = sessions[currentUser] || [];
+    let ongoing = (userSessions.length > 0 && !userSessions[userSessions.length - 1].end);
+    let html = "<h2>Rozliczenie - Twoje godziny pracy</h2>";
+    if (ongoing) {
+      html += `<p>Praca rozpoczęta: ${new Date(userSessions[userSessions.length - 1].start).toLocaleString()}</p>`;
+      html += `<button class="primary" onclick="stopWork()">Zakończ pracę</button>`;
+    } else {
+      html += `<button class="primary" onclick="startWork()">Rozpocznij pracę</button>`;
+    }
+    html += "<h3>Twoje sesje pracy:</h3>";
+    if (userSessions.length === 0) { html += "<p>Brak zarejestrowanych sesji.</p>"; }
+    else {
+      html += "<ul>";
+      userSessions.forEach((sess, index) => {
+        const start = new Date(sess.start).toLocaleString();
+        const end = sess.end ? new Date(sess.end).toLocaleString() : "Trwa";
+        const dur = sess.duration ? sess.duration + " godz." : "";
+        html += `<li>Sesja ${index+1}: Start: ${start}, Koniec: ${end}${dur ? ", Czas: " + dur : ""}</li>`;
+      });
+      html += "</ul>";
+    }
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    let totalHours = 0;
+    userSessions.forEach(sess => {
+      if (sess.duration && sess.start) {
+        const startDate = new Date(sess.start);
+        if (startDate.getFullYear() === currentYear && startDate.getMonth() === currentMonth) { totalHours += sess.duration; }
+      }
+    });
+    totalHours = Math.round(totalHours * 100) / 100;
+    const earnings = Math.round(totalHours * 32.50 * 100) / 100;
+    html += `<h3>Podsumowanie za bieżący miesiąc:</h3>`;
+    html += `<p>Łączny czas pracy: ${totalHours} godz.</p>`;
+    html += `<p>Wynagrodzenie: ${earnings} zł (przy stawce 32,50 zł/godz.)</p>`;
+    contentContainer.innerHTML = html;
+  }
+
+  function renderRozliczenieLogistyk() {
+    const sessions = getWorkingSessions();
+    let html = "<h2>Rozliczenie kontrolerów</h2>";
+    ["kontroler1", "kontroler2"].forEach(ctrl => {
+      const ctrlSessions = sessions[ctrl] || [];
+      let groups = {};
+      ctrlSessions.forEach((sess, index) => {
+        if (sess.duration) {
+          const date = new Date(sess.start);
+          const key = `${date.getFullYear()}-${("0" + (date.getMonth()+1)).slice(-2)}`;
+          if (!groups[key]) groups[key] = [];
+          groups[key].push({duration: sess.duration, index});
+        }
+      });
+      html += `<h3>${ctrl}</h3>`;
+      if (Object.keys(groups).length === 0) { html += "<p>Brak zarejestrowanych sesji.</p>"; }
+      else {
+        for (const month in groups) {
+          let total = groups[month].reduce((sum, s) => sum + s.duration, 0);
+          total = Math.round(total * 100) / 100;
+          const pay = Math.round(total * 32.50 * 100) / 100;
+          html += `<h4>Miesiąc: ${month} - Godziny: ${total} godz., Wynagrodzenie: ${pay} zł</h4>`;
+          html += "<ul>";
+          groups[month].forEach((s, i) => {
+            html += `<li>Sesja ${i+1}: ${s.duration} godz. <button class="secondary" onclick="editSession('${ctrl}', ${s.index})">Edytuj</button></li>`;
+          });
+          html += "</ul>";
+        }
+      }
+    });
+    contentContainer.innerHTML = html;
+  }
+
+  /************************************************************
+   *       LISTY SPRZĄTAJĄCE
+   ************************************************************/
+  function renderListySprzatajace() {
+    let html = "<h2>Listy sprzątające</h2>";
+    html += `<button class="primary" onclick="generateCleaningList()">Generuj listę</button>`;
+    html += `<div id="cleaningListResult" style="margin-top:20px;"></div>`;
+    contentContainer.innerHTML = html;
+  }
+
+  window.generateCleaningList = function() {
+    if (zlecenia.length === 0) {
+      document.getElementById("cleaningListResult").innerHTML = "<p>Brak zleceń.</p>";
+      return;
+    }
+    let listHtml = "<h3>Lista zleceń dla pan sprzątających:</h3><ul>";
+    zlecenia.forEach(z => {
+      listHtml += `<li>${z.nazwa} - Uwagi: ${z.uwagi || "-"}</li>`;
+    });
+    listHtml += "</ul>";
+    listHtml += `<button class="primary" onclick="window.print()">Drukuj listę</button>`;
+    document.getElementById("cleaningListResult").innerHTML = listHtml;
+  };
+
+  /************************************************************
+   *       Eksport listy zleceń dla kontrolerów (CSV)
+   ************************************************************/
+  window.downloadControllerOrders = function() {
+    const orders = listyKontrolerow[currentUser] || [];
+    if (orders.length === 0) { alert("Brak zleceń do pobrania."); return; }
+    let csv = "ID,Nazwa,Kod dostępu,Uwagi\n";
+    orders.forEach(o => { csv += `${o.id},"${o.nazwa}","${o.kodDostepu}","${o.uwagi}"\n`; });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "lista_zlecen.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  /************************************************************
+   *       Modal powiększenia zdjęcia w usterkach
+   ************************************************************/
+  window.zoomImage = function(imgElement) {
+    const overlay = document.createElement("div");
+    overlay.style.position = "fixed";
+    overlay.style.top = "0";
+    overlay.style.left = "0";
+    overlay.style.width = "100%";
+    overlay.style.height = "100%";
+    overlay.style.backgroundColor = "rgba(0,0,0,0.8)";
+    overlay.style.display = "flex";
+    overlay.style.justifyContent = "center";
+    overlay.style.alignItems = "center";
+    overlay.style.cursor = "pointer";
+    const enlargedImg = document.createElement("img");
+    enlargedImg.src = imgElement.src;
+    enlargedImg.style.maxWidth = "90%";
+    enlargedImg.style.maxHeight = "90%";
+    overlay.appendChild(enlargedImg);
+    overlay.onclick = function() { document.body.removeChild(overlay); };
+    document.body.appendChild(overlay);
+  };
+
+  /************************************************************
+   *                   INICJALIZACJA ZAKŁADEK
+   ************************************************************/
+  initTabs();
+</script>
+</body>
+</html>
